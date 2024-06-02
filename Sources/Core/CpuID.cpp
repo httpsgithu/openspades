@@ -43,9 +43,11 @@ namespace spades {
 		{
 			auto ar = cpuid(0);
 			char buf[13];
-			buf[12] = 0;
 			maxStdLevel = ar[0];
-			memcpy(buf, ar.data() + 1, 12);
+			memcpy(&buf[0], &ar[1], 4);
+			memcpy(&buf[4], &ar[3], 4);
+			memcpy(&buf[8], &ar[2], 4);
+			buf[12] = 0;
 			vendor = buf;
 		}
 		{
@@ -54,7 +56,7 @@ namespace spades {
 			featureEdx = ar[3];
 
 			// xsave/osxsave
-			if ((featureEcx & 26) && (featureEcx & 27)) {
+			if ((featureEcx & (1U << 28)) && (featureEcx & 26) && (featureEcx & 27)) {
 				auto x = xcr0();
 				featureXcr0Avx = ((x & 6) == 6);
 				featureXcr0Avx512 = ((x & 224) == 224);
@@ -89,7 +91,7 @@ namespace spades {
 			case CpuFeature::SSE3: return featureEcx & (1U << 0);
 			case CpuFeature::SSSE3: return featureEcx & (1U << 9);
 			case CpuFeature::FMA: return featureEcx & (1U << 12);
-			case CpuFeature::AVX: return (featureXcr0Avx && (featureEcx & (1U << 28)));
+			case CpuFeature::AVX: return featureXcr0Avx;
 			case CpuFeature::AVX2: return (featureXcr0Avx && subfeature & (1U << 5));
 			case CpuFeature::AVX512CD: return (featureXcr0Avx512 && subfeature & (1U << 28));
 			case CpuFeature::AVX512ER: return (featureXcr0Avx512 && subfeature & (1U << 27));
